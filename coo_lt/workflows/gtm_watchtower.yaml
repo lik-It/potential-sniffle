@@ -1,0 +1,30 @@
+name: GTM Watchtower Monitor
+trigger:
+  type: schedule
+  offset: -30m
+  event: "Forecast Call"
+
+jobs:
+  check_hunting_pods:
+    steps:
+      - name: Check Variance
+        action: assert
+        condition: "abs(current_commit - last_week_commit) > 0.10"
+        alert: "⚠️ Variance Alert: Commit changed by >10%"
+
+      - name: Check Stalled Deals
+        action: query_crm
+        filter: "stage == 'Commit' AND last_activity_days > 14"
+        alert: "👻 Ghost Deal Detected: No activity for 14+ days"
+
+      - name: Check Pipeline Coverage
+        action: assert
+        condition: "pipeline_value / quota < 3.0"
+        alert: "📉 Coverage Alert: Pipeline below 3x target"
+
+  check_farming_pods:
+    steps:
+      - name: Check Churn Risk
+        action: query_crm
+        filter: "renewal_days < 90 AND health_score IN ['Red', 'Yellow']"
+        alert: "🚨 Churn Risk: Renewal in <90 days with poor health"
